@@ -31,21 +31,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Setup Android SDK with sdkman
-      run: |
-        echo "sdkman_auto_answer=true" >> $GITHUB_ENV
-        echo "sdkman_auto_accept=true" >> $GITHUB_ENV
-        curl -s "https://get.sdkman.io?rcupdate=false" | bash
-        source "$HOME/.sdkman/bin/sdkman-init.sh"
-        sdk install java 11.0.21-tem
-        sdk install gradle 8.0
-
-    - name: Install Android SDK components
+    - name: Setup Android SDK
       run: |
         export ANDROID_HOME="$HOME/android-sdk"
         mkdir -p "$ANDROID_HOME"
-        echo "export ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
-        echo "export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+        echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
         
         cd "$ANDROID_HOME"
         curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
@@ -63,8 +54,8 @@ jobs:
     - name: Build debug APK
       working-directory: ./android
       run: |
-        source "$HOME/.sdkman/bin/sdkman-init.sh"
         echo "sdk.dir=$ANDROID_HOME" > local.properties
+        chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
