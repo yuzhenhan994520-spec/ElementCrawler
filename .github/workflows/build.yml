@@ -31,11 +31,28 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Show Android SDK
+    - name: Install Android SDK via Chocolatey
       run: |
-        echo "ANDROID_HOME: $env:ANDROID_HOME"
-        echo "ANDROID_SDK_ROOT: $env:ANDROID_SDK_ROOT"
-        Get-ChildItem "C:\hostedtoolcache\Android*" -ErrorAction SilentlyContinue
+        choco install android-sdk -y
+
+    - name: Set environment variables
+      run: |
+        echo "ANDROID_HOME=C:\ProgramData\chocolatey\lib\android-sdk\tools" >> $env:GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=C:\ProgramData\chocolatey\lib\android-sdk\tools" >> $env:GITHUB_ENV
+
+    - name: Accept licenses and install SDK components
+      run: |
+        $env:ANDROID_HOME = "C:\ProgramData\chocolatey\lib\android-sdk\tools"
+        $env:PATH += ";$env:ANDROID_HOME\cmdline-tools\latest\bin"
+        if (Test-Path "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.exe") {
+          yes | & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.exe" --licenses 2>$null
+          & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.exe" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        }
+
+    - name: Create local.properties
+      working-directory: .\android
+      run: |
+        "sdk.dir=C:\ProgramData\chocolatey\lib\android-sdk\tools" | Out-File -FilePath local.properties -Encoding utf8
 
     - name: Build debug APK
       working-directory: .\android
