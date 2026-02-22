@@ -31,27 +31,15 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Cache Android SDK
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/android-sdk
-          ${{ env.ANDROID_HOME }}
-          ${{ env.ANDROID_SDK_ROOT }}
-        key: ${{ runner.os }}-android-sdk-${{ hashFiles('**/build.gradle*', '**/gradle.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-android-sdk-
-
-    - name: Setup Android SDK
+    - name: Download Android SDK
       run: |
-        if [ -z "$ANDROID_HOME" ]; then
-          export ANDROID_HOME="$HOME/android-sdk"
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-        fi
-        mkdir -p "$ANDROID_HOME"
+        export ANDROID_HOME="$HOME/android-sdk"
+        export ANDROID_SDK_ROOT="$ANDROID_HOME"
         
-        if [ ! -f "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
-          cd "$ANDROID_HOME"
+        mkdir -p "$ANDROID_HOME"
+        cd "$ANDROID_HOME"
+        
+        if [ ! -f "cmdline-tools/latest/bin/sdkmanager" ]; then
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
           unzip -q cmdline-tools.zip
           mkdir -p cmdline-tools/latest
@@ -62,9 +50,9 @@ jobs:
         export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
         
         yes | sdkmanager --licenses > /dev/null 2>&1 || true
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" 2>&1
         
-        echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+        echo "sdk.dir=$ANDROID_HOME" > $GITHUB_WORKSPACE/android/local.properties
 
     - name: Ensure gradlew is executable
       working-directory: ./android
@@ -73,6 +61,9 @@ jobs:
     - name: Build debug APK
       working-directory: ./android
       run: |
+        export ANDROID_HOME="$HOME/android-sdk"
+        export ANDROID_SDK_ROOT="$ANDROID_HOME"
+        export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
         ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
