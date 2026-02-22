@@ -31,28 +31,31 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Install Android SDK via Chocolatey
+    - name: Download Android SDK
       run: |
-        choco install android-sdk -y
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip" -OutFile "cmdline-tools.zip"
+        Expand-Archive -Path "cmdline-tools.zip" -DestinationPath "android-sdk"
+        New-Item -ItemType Directory -Path "android-sdk/cmdline-tools/latest" -Force
+        Move-Item -Path "android-sdk/cmdline-tools/*" -Destination "android-sdk/cmdline-tools/latest/" -Force
 
-    - name: Set environment variables
+    - name: Set environment
       run: |
-        echo "ANDROID_HOME=C:\ProgramData\chocolatey\lib\android-sdk\tools" >> $env:GITHUB_ENV
-        echo "ANDROID_SDK_ROOT=C:\ProgramData\chocolatey\lib\android-sdk\tools" >> $env:GITHUB_ENV
+        echo "ANDROID_HOME=$pwd/android-sdk" | Out-File -FilePath $env:GITHUB_ENV -Append
+        echo "ANDROID_SDK_ROOT=$pwd/android-sdk" | Out-File -FilePath $env:GITHUB_ENV -Append
+        $env:PATH += ";$pwd/android-sdk/cmdline-tools/latest/bin;$pwd/android-sdk/platform-tools"
 
-    - name: Accept licenses and install SDK components
+    - name: Install SDK components
       run: |
-        $env:ANDROID_HOME = "C:\ProgramData\chocolatey\lib\android-sdk\tools"
-        $env:PATH += ";$env:ANDROID_HOME\cmdline-tools\latest\bin"
-        if (Test-Path "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.exe") {
-          yes | & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.exe" --licenses 2>$null
-          & "$env:ANDROID_HOME\cmdline-tools\latest\bin\sdkmanager.exe" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-        }
+        $env:ANDROID_HOME = "$pwd/android-sdk"
+        $env:PATH = "$env:PATH;$env:ANDROID_HOME/cmdline-tools/latest/bin;$env:ANDROID_HOME/platform-tools"
+        & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" --licenses *>&1 | Out-Null
+        & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
     - name: Create local.properties
       working-directory: .\android
       run: |
-        "sdk.dir=C:\ProgramData\chocolatey\lib\android-sdk\tools" | Out-File -FilePath local.properties -Encoding utf8
+        "sdk.dir=$pwd/android-sdk" | Out-File -FilePath local.properties -Encoding utf8
 
     - name: Build debug APK
       working-directory: .\android
