@@ -44,6 +44,12 @@ jobs:
         unzip -q gradle.zip
         export PATH=$PATH:/home/runner/gradle-8.0/bin
 
+    - name: Generate Gradle Wrapper
+      working-directory: ./android
+      run: |
+        export PATH=$PATH:/home/runner/gradle-8.0/bin
+        gradle wrapper --gradle-version 8.0
+
     - name: Build debug APK
       working-directory: ./android
       run: |
