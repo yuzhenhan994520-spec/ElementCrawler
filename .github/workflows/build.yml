@@ -38,14 +38,18 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
 
+    - name: Install Gradle
+      run: |
+        wget -q https://services.gradle.org/distributions/gradle-8.0-bin.zip -O gradle.zip
+        unzip -q gradle.zip
+        export PATH=$PATH:/home/runner/gradle-8.0/bin
+
     - name: Build debug APK
       working-directory: ./android
       run: |
-        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-          gradle wrapper --gradle-version 8.0
-        fi
-        chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon --stacktrace
+        export PATH=$PATH:/home/runner/gradle-8.0/bin
+        gradle --version
+        gradle assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
       if: success()
