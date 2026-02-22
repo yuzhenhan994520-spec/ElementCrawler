@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
@@ -31,28 +31,40 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Install Android SDK
+    - name: Setup Android SDK with sdkman
       run: |
-        mkdir -p $HOME/android-sdk
-        cd $HOME/android-sdk
+        echo "sdkman_auto_answer=true" >> $GITHUB_ENV
+        echo "sdkman_auto_accept=true" >> $GITHUB_ENV
+        curl -s "https://get.sdkman.io?rcupdate=false" | bash
+        source "$HOME/.sdkman/bin/sdkman-init.sh"
+        sdk install java 11.0.21-tem
+        sdk install gradle 8.0
+
+    - name: Install Android SDK components
+      run: |
+        export ANDROID_HOME="$HOME/android-sdk"
+        mkdir -p "$ANDROID_HOME"
+        echo "export ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+        echo "export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+        
+        cd "$ANDROID_HOME"
         curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
         unzip -q cmdline-tools.zip
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/NOTICE.txt cmdline-tools/source.properties cmdline-tools/latest/ 2>/dev/null || true
         rm cmdline-tools.zip
-        echo "export ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
-
-    - name: Accept licenses and install components
-      run: |
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        
+        mkdir -p cmdline-tools/latest
+        if [ -d "cmdline-tools/bin" ]; then
+          mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/NOTICE.txt cmdline-tools/source.properties cmdline-tools/latest/ 2>/dev/null || true
+        fi
+        
+        yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null 2>&1 || true
+        "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
     - name: Build debug APK
       working-directory: ./android
       run: |
+        source "$HOME/.sdkman/bin/sdkman-init.sh"
         echo "sdk.dir=$ANDROID_HOME" > local.properties
-        chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
