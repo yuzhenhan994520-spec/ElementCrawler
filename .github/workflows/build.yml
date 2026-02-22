@@ -34,10 +34,13 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
 
+    - name: Create local.properties
+      working-directory: ./android
+      run: echo "sdk.dir=${{ env.ANDROID_HOME }}" > local.properties
+
     - name: Build debug APK
       working-directory: ./android
-      run: |
-        ./gradlew assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
       if: success()
