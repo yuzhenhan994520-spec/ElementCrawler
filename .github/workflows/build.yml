@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -22,7 +22,7 @@ jobs:
         distribution: 'temurin'
 
     - name: Cache Gradle packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
@@ -35,13 +35,20 @@ jobs:
       run: |
         echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+
     - name: Build debug APK
       working-directory: ./android
       run: |
+        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+          gradle wrapper --gradle-version 8.0
+        fi
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon
+        ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload APK
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: app-debug.apk
