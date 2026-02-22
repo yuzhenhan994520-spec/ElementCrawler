@@ -31,16 +31,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v2
+    - name: Set ANDROID_HOME
+      run: echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
 
-    - name: Create local.properties
-      working-directory: ./android
-      run: echo "sdk.dir=${{ env.ANDROID_HOME }}" > local.properties
+    - name: Accept Android licenses
+      run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
     - name: Build debug APK
       working-directory: ./android
-      run: ./gradlew assembleDebug --no-daemon
+      run: |
+        echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
       if: success()
