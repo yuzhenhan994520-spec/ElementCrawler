@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">元素捕手</string>
+    <string name="accessibility_service_description">元素捕手服务用于捕获手机屏幕上所有应用界面元素，包括文本、按钮、输入框等，以便进行元素定位和自动化操作。</string>
+    <string name="start_service">开启服务</string>
+    <string name="stop_service">停止服务</string>
+    <string name="service_status_running">服务运行中</string>
+    <string name="service_status_stopped">服务已停止</string>
+    <string name="permission_required">需要无障碍权限</string>
+    <string name="grant_permission">前往授权</string>
+    <string name="service_info">服务说明</string>
+    <string name="service_info_text">元素捕手需要获取无障碍权限才能捕获界面元素。请确保在设置中启用本服务，并允许其显示在其他应用之上。启用后，服务将在后台运行，捕获当前屏幕上的所有可交互元素。</string>
+    <string name="element_count">当前页面元素数: %d</string>
+    <string name="pc_connection_info">PC端连接信息</string>
+    <string name="pc_ip_hint">请在PC端软件中输入此IP地址进行连接</string>
+    <string name="port">端口: %d</string>
+    <string name="copy_ip">复制IP地址</string>
+    <string name="ip_copied">IP地址已复制</string>
+</resources>

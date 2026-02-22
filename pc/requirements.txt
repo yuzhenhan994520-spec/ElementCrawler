@@ -1,0 +1,14 @@
+{
+    "name": "element-crawler-pc",
+    "version": "1.0.0",
+    "description": "Element Crawler PC Control Application": "main.py",
+    "main",
+    "scripts": {
+        "start": "python main.py"
+    },
+    "dependencies": {
+        "PyQt6": "^6.6.0",
+        "requests": "^2.31.0",
+        "websocket-client": "^1.7.0"
+    }
+}
