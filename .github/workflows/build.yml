@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     
     steps:
     - name: Checkout code
@@ -31,24 +31,26 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Install Android SDK
+    - name: Setup Android SDK
       run: |
-        export ANDROID_SDK_ROOT="$HOME/android-sdk"
+        export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
         export ANDROID_HOME="$ANDROID_SDK_ROOT"
+        
         mkdir -p "$ANDROID_SDK_ROOT"
         
-        cd "$ANDROID_SDK_ROOT"
+        if [ ! -d "$ANDROID_SDK_ROOT/cmdline-tools/latest" ]; then
+          cd "$ANDROID_SDK_ROOT"
+          curl -sL https://dl.google.com/android/repository/commandlinetools-mac-11076708_latest.zip -o cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/NOTICE.txt cmdline-tools/source.properties cmdline-tools/latest/ 2>/dev/null || true
+          rm cmdline-tools.zip
+        fi
         
-        curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
-        unzip -q cmdline-tools.zip
-        mkdir -p cmdline-tools/latest
-        mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/NOTICE.txt cmdline-tools/source.properties cmdline-tools/latest/ 2>/dev/null || true
-        rm cmdline-tools.zip
-        
-        export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+        export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
         
         yes | sdkmanager --licenses > /dev/null 2>&1 || true
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" --sdk_root="$ANDROID_SDK_ROOT"
         
         echo "sdk.dir=$ANDROID_SDK_ROOT" > $GITHUB_WORKSPACE/android/local.properties
 
@@ -59,7 +61,7 @@ jobs:
     - name: Build debug APK
       working-directory: ./android
       run: |
-        export ANDROID_SDK_ROOT="$HOME/android-sdk"
+        export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
         export ANDROID_HOME="$ANDROID_SDK_ROOT"
         export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH"
         ./gradlew assembleDebug --no-daemon --stacktrace
