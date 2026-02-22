@@ -31,30 +31,36 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Prepare SDK directories
-      run: |
-        mkdir -p "$HOME/android-sdk"
-        mkdir -p "$HOME/android-sdk/cmdline-tools"
-        cd "$HOME/android-sdk/cmdline-tools"
-        if [ ! -d "latest" ]; then
-          curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
-          unzip -q cmdline-tools.zip
-          mv cmdline-tools latest
-          rm cmdline-tools.zip
-        fi
+    - name: Cache Android SDK
+      id: cache-sdk
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/android-sdk
+        key: ${{ runner.os }}-android-sdk-34
 
-    - name: Accept licenses and install SDK components
+    - name: Setup Android SDK
+      if: steps.cache-sdk.outputs.cache-hit != 'true'
       run: |
-        export ANDROID_HOME="$HOME/android-sdk"
-        export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+        mkdir -p ~/android-sdk/cmdline-tools
+        cd ~/android-sdk/cmdline-tools
+        curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
+        unzip -q cmdline-tools.zip
+        rm cmdline-tools.zip
+        mv cmdline-tools latest
+
+    - name: Accept licenses and install SDK
+      run: |
+        export ANDROID_HOME=~/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         yes | sdkmanager --licenses > /dev/null 2>&1 || true
         sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
     - name: Build debug APK
       working-directory: ./android
       run: |
-        echo "sdk.dir=$HOME/android-sdk" > local.properties
-        export ANDROID_HOME="$HOME/android-sdk"
+        echo "sdk.dir=~/android-sdk" > local.properties
+        export ANDROID_HOME=~/android-sdk
         ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
