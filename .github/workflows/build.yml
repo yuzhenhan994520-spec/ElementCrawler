@@ -31,32 +31,12 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Install SDK if not present
-      run: |
-        if [ -z "$ANDROID_HOME" ] || [ ! -d "$ANDROID_HOME" ]; then
-          export ANDROID_HOME=/opt/android-sdk
-          mkdir -p "$ANDROID_HOME"
-          cd "$ANDROID_HOME"
-          curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
-          unzip -q cmdline-tools.zip
-          rm cmdline-tools.zip
-          mkdir -p cmdline-tools/latest
-          cd cmdline-tools
-          mv bin lib NOTICE.txt source.properties latest/ 2>/dev/null || true
-        fi
-        echo "ANDROID_HOME=$ANDROID_HOME"
-
-    - name: Accept licenses and install required packages
-      run: |
-        export ANDROID_HOME=/opt/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-        yes | sdkmanager --licenses > /dev/null 2>&1 || true
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" 2>&1 | tail -5
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
 
     - name: Build debug APK
       working-directory: ./android
       run: |
-        echo "sdk.dir=/opt/android-sdk" > local.properties
         ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
