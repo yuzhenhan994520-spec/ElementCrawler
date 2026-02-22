@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-22.04
     
     steps:
     - name: Checkout code
@@ -31,35 +31,29 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
 
-    - name: Download Android SDK
+    - name: Install Android SDK
       run: |
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri "https://dl.google.com/android/repository/commandlinetools-win-11076708_latest.zip" -OutFile "cmdline-tools.zip"
-        Expand-Archive -Path "cmdline-tools.zip" -DestinationPath "android-sdk"
-        New-Item -ItemType Directory -Path "android-sdk/cmdline-tools/latest" -Force
-        Move-Item -Path "android-sdk/cmdline-tools/*" -Destination "android-sdk/cmdline-tools/latest/" -Force
+        mkdir -p $HOME/android-sdk
+        cd $HOME/android-sdk
+        curl -sL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o cmdline-tools.zip
+        unzip -q cmdline-tools.zip
+        mkdir -p cmdline-tools/latest
+        mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/NOTICE.txt cmdline-tools/source.properties cmdline-tools/latest/ 2>/dev/null || true
+        rm cmdline-tools.zip
+        echo "export ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "export PATH=\$PATH:\$ANDROID_HOME/cmdline-tools/latest/bin:\$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
 
-    - name: Set environment
+    - name: Accept licenses and install components
       run: |
-        echo "ANDROID_HOME=$pwd/android-sdk" | Out-File -FilePath $env:GITHUB_ENV -Append
-        echo "ANDROID_SDK_ROOT=$pwd/android-sdk" | Out-File -FilePath $env:GITHUB_ENV -Append
-        $env:PATH += ";$pwd/android-sdk/cmdline-tools/latest/bin;$pwd/android-sdk/platform-tools"
-
-    - name: Install SDK components
-      run: |
-        $env:ANDROID_HOME = "$pwd/android-sdk"
-        $env:PATH = "$env:PATH;$env:ANDROID_HOME/cmdline-tools/latest/bin;$env:ANDROID_HOME/platform-tools"
-        & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" --licenses *>&1 | Out-Null
-        & "$env:ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager.bat" "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-
-    - name: Create local.properties
-      working-directory: .\android
-      run: |
-        "sdk.dir=$pwd/android-sdk" | Out-File -FilePath local.properties -Encoding utf8
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
     - name: Build debug APK
-      working-directory: .\android
-      run: .\gradlew.bat assembleDebug --no-daemon
+      working-directory: ./android
+      run: |
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon
 
     - name: Upload APK
       if: success()
